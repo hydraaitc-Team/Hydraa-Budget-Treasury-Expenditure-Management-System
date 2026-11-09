@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build files
+.next/
+dist/
+build/
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# Local storage and uploaded files
+storage/

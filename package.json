@@ -1,0 +1,33 @@
+{
+  "name": "hydraa-finance-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HYDRAA Budget, Treasury & Expenditure Management System",
+  "scripts": {
+    "backend:dev": "cd apps/backend && npm run start:dev",
+    "backend:build": "cd apps/backend && npm run build",
+    "backend:start": "cd apps/backend && npm run start:prod",
+    "web:dev": "cd apps/web && npm run dev",
+    "web:build": "cd apps/web && npm run build",
+    "web:start": "cd apps/web && npm run start",
+    "build": "npm run backend:build && npm run web:build",
+    "prisma:generate": "cd apps/backend && npm run prisma:generate",
+    "prisma:push": "cd apps/backend && npm run prisma:push",
+    "seed": "cd apps/backend && npm run seed"
+  },
+  "keywords": [
+    "hydraa",
+    "treasury",
+    "budget",
+    "expenditure",
+    "telangana"
+  ],
+  "author": "HYDRAA Treasury IT",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}

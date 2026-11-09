@@ -1,0 +1,551 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../apps/backend/node_modules/.prisma/client"
+}
+
+// -------------------------------------------------------------
+// 1. MASTER & ORGANISATION MODELS
+// -------------------------------------------------------------
+
+model FinancialYear {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(20) // e.g. "2024-25"
+  name        String   @db.VarChar(50)         // e.g. "FY 2024-2025"
+  startDate   DateTime @db.Date                // e.g. 2024-04-01
+  endDate     DateTime @db.Date                // e.g. 2025-03-31
+  isCurrent   Boolean  @default(false)
+  isClosed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  budgetAccounts       BudgetAccount[]
+  budgetTransactions   BudgetTransaction[]
+  bills                Bill[]
+  taxRemittances       TaxRemittance[]
+  governmentOrders     GovernmentOrder[]
+
+  @@map("financial_years")
+}
+
+model FundingSource {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(20) // "HMDA", "PD"
+  name        String   @db.VarChar(100)        // "Hyderabad Metropolitan Development Authority", "Personal Deposit"
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  budgetAccounts         BudgetAccount[]
+  budgetTransactions     BudgetTransaction[]
+  billBudgetAllocations  BillBudgetAllocation[]
+  governmentOrders       GovernmentOrder[]
+
+  @@map("funding_sources")
+}
+
+model Wing {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(30) // "MTO", "Admin", "Legal", "DTC", "ITC", "PS_HYDRAA"
+  name        String   @db.VarChar(150)
+  headPerson  String?  @db.VarChar(100)
+  contactNo   String?  @db.VarChar(20)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bills Bill[]
+
+  @@map("wings")
+}
+
+model BudgetHead {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @db.VarChar(50) // "HIRING", "DEMOLITION", "POL_REPAIRS", etc.
+  name        String   @db.VarChar(150)
+  category    String?  @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subHeads               BudgetSubHead[]
+  budgetAccounts         BudgetAccount[]
+  budgetTransactions     BudgetTransaction[]
+  billBudgetAllocations  BillBudgetAllocation[]
+  governmentOrders       GovernmentOrder[]
+
+  @@map("budget_heads")
+}
+
+model BudgetSubHead {
+  id           Int      @id @default(autoincrement())
+  budgetHeadId Int
+  code         String   @db.VarChar(50)
+  name         String   @db.VarChar(150)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  budgetHead   BudgetHead @relation(fields: [budgetHeadId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetHeadId, code])
+  @@map("budget_sub_heads")
+}
+
+// -------------------------------------------------------------
+// 2. VENDOR & BANK ACCOUNTS
+// -------------------------------------------------------------
+
+model Vendor {
+  id            Int      @id @default(autoincrement())
+  vendorCode    String   @unique @db.VarChar(50)
+  name          String   @db.VarChar(255)
+  pan           String?  @db.VarChar(20)
+  gstin         String?  @db.VarChar(20)
+  contactPerson String?  @db.VarChar(100)
+  phone         String?  @db.VarChar(30)
+  email         String?  @db.VarChar(100)
+  address       String?  @db.Text
+  purpose       String?  @db.VarChar(255)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bankAccounts VendorBankAccount[]
+  bills        Bill[]
+  documents    Document[]
+
+  @@index([gstin])
+  @@index([pan])
+  @@map("vendors")
+}
+
+model VendorBankAccount {
+  id            Int      @id @default(autoincrement())
+  vendorId      Int
+  bankName      String   @db.VarChar(150)
+  accountNumber String   @db.VarChar(50)
+  ifscCode      String   @db.VarChar(20)
+  branch        String?  @db.VarChar(100)
+  isPrimary     Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_bank_accounts")
+}
+
+// -------------------------------------------------------------
+// 3. USER, RBAC & AUDIT
+// -------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  TREASURY_ADMIN
+  TREASURY_DATA_ENTRY
+  TREASURY_SUPERVISOR
+  AUDITOR_READ_ONLY
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  email        String    @unique @db.VarChar(100)
+  fullName     String    @db.VarChar(150)
+  designation  String?   @db.VarChar(100)
+  passwordHash String    @db.VarChar(255)
+  role         UserRole  @default(TREASURY_DATA_ENTRY)
+  permissions  String?   @db.Text // JSON array of custom permission strings
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  auditLogs        AuditLog[]
+  loginHistories   LoginHistory[]
+  uploadedDocs     Document[]
+  settlementsDone  BillSettlement[]
+
+  @@map("users")
+}
+
+model RolePermission {
+  id          Int      @id @default(autoincrement())
+  role        UserRole @unique
+  permissions String   @db.Text // JSON array of permitted action keys
+  updatedAt   DateTime @updatedAt
+
+  @@map("role_permissions")
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  username  String   @db.VarChar(50)
+  status    String   @db.VarChar(30) // "SUCCESS", "FAILED", "LOCKED"
+  ipAddress String?  @db.VarChar(50)
+  userAgent String?  @db.Text
+  reason    String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([username])
+  @@index([createdAt])
+  @@map("login_history")
+}
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  userId         Int?
+  action         String   @db.VarChar(50)  // "CREATE", "UPDATE", "CANCEL", "VERIFY", "EXPORT", etc.
+  module         String   @db.VarChar(50)  // "BUDGET", "BILL", "VENDOR", "PAYMENT", "MASTER"
+  recordId       String?  @db.VarChar(50)
+  details        String?  @db.Text
+  previousValues String?  @db.LongText
+  newValues      String?  @db.LongText
+  reason         String?  @db.VarChar(255)
+  ipAddress      String?  @db.VarChar(50)
+  createdAt      DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([module, recordId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// -------------------------------------------------------------
+// 4. BUDGET ACCOUNT & TRANSACTIONS
+// -------------------------------------------------------------
+
+model GovernmentOrder {
+  id              Int      @id @default(autoincrement())
+  orderType       String   @db.VarChar(20) // "GO", "BRO"
+  orderNumber     String   @db.VarChar(100)
+  orderDate       DateTime @db.Date
+  financialYearId Int
+  fundingSourceId Int
+  budgetHeadId    Int?
+  amount          Decimal  @db.Decimal(18, 2)
+  quarter         String?  @db.VarChar(20) // "Q1", "Q2", "Q3", "Q4" or custom
+  remarks         String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  financialYear      FinancialYear       @relation(fields: [financialYearId], references: [id])
+  fundingSource      FundingSource       @relation(fields: [fundingSourceId], references: [id])
+  budgetHead         BudgetHead?         @relation(fields: [budgetHeadId], references: [id])
+  budgetTransactions BudgetTransaction[]
+  documents          Document[]
+
+  @@index([orderNumber])
+  @@map("government_orders")
+}
+
+model BudgetAccount {
+  id              Int      @id @default(autoincrement())
+  financialYearId Int
+  fundingSourceId Int
+  budgetHeadId    Int
+  
+  // Snapshots & Derived Cached Balances (Reconciled from ledger)
+  estimatedAmount  Decimal  @default(0.00) @db.Decimal(18, 2)
+  allottedAmount   Decimal  @default(0.00) @db.Decimal(18, 2)
+  releasedAmount   Decimal  @default(0.00) @db.Decimal(18, 2)
+  additionalAmount Decimal  @default(0.00) @db.Decimal(18, 2)
+  openingBalance   Decimal  @default(0.00) @db.Decimal(18, 2)
+  transfersIn      Decimal  @default(0.00) @db.Decimal(18, 2)
+  transfersOut     Decimal  @default(0.00) @db.Decimal(18, 2)
+  expenditureAmount Decimal @default(0.00) @db.Decimal(18, 2)
+  unspentBalance   Decimal  @default(0.00) @db.Decimal(18, 2) // Released - Expenditure + Transfers
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  financialYear    FinancialYear    @relation(fields: [financialYearId], references: [id])
+  fundingSource    FundingSource    @relation(fields: [fundingSourceId], references: [id])
+  budgetHead       BudgetHead       @relation(fields: [budgetHeadId], references: [id])
+  transactions     BudgetTransaction[]
+  ledgerEntries    BudgetLedgerEntry[]
+
+  @@unique([financialYearId, fundingSourceId, budgetHeadId])
+  @@map("budget_accounts")
+}
+
+enum BudgetTxType {
+  INITIAL_ALLOTMENT
+  BUDGET_RELEASE
+  ADDITIONAL_RELEASE
+  REVISED_ESTIMATE
+  REAPPROPRIATION
+  TRANSFER_IN
+  TRANSFER_OUT
+  OPENING_BALANCE
+  CARRY_FORWARD
+  EXPENDITURE_POSTING
+  REVERSAL
+}
+
+model BudgetTransaction {
+  id                Int          @id @default(autoincrement())
+  transactionNumber String       @unique @db.VarChar(50)
+  budgetAccountId   Int
+  financialYearId   Int
+  fundingSourceId   Int
+  budgetHeadId      Int
+  governmentOrderId Int?
+  txType            BudgetTxType
+  amount            Decimal      @db.Decimal(18, 2)
+  txDate            DateTime     @db.Date
+  remarks           String?      @db.Text
+  isReversed        Boolean      @default(false)
+  reversalReason    String?      @db.Text
+  createdBy         String?      @db.VarChar(100)
+  createdAt         DateTime     @default(now())
+
+  budgetAccount     BudgetAccount    @relation(fields: [budgetAccountId], references: [id])
+  financialYear     FinancialYear    @relation(fields: [financialYearId], references: [id])
+  fundingSource     FundingSource    @relation(fields: [fundingSourceId], references: [id])
+  budgetHead        BudgetHead       @relation(fields: [budgetHeadId], references: [id])
+  governmentOrder   GovernmentOrder? @relation(fields: [governmentOrderId], references: [id])
+  ledgerEntries     BudgetLedgerEntry[]
+
+  @@index([budgetAccountId])
+  @@index([txType])
+  @@index([txDate])
+  @@map("budget_transactions")
+}
+
+model BudgetLedgerEntry {
+  id                  Int          @id @default(autoincrement())
+  budgetAccountId     Int
+  budgetTransactionId Int?
+  billSettlementId    Int?
+  entryType           String       @db.VarChar(30) // "CREDIT", "DEBIT", "REVERSAL"
+  amount              Decimal      @db.Decimal(18, 2)
+  balanceAfter        Decimal      @db.Decimal(18, 2)
+  description         String       @db.VarChar(255)
+  entryDate           DateTime     @db.Date
+  createdAt           DateTime     @default(now())
+
+  budgetAccount       BudgetAccount      @relation(fields: [budgetAccountId], references: [id])
+  budgetTransaction   BudgetTransaction? @relation(fields: [budgetTransactionId], references: [id])
+  billSettlement      BillSettlement?    @relation(fields: [billSettlementId], references: [id])
+
+  @@index([budgetAccountId])
+  @@index([entryDate])
+  @@map("budget_ledger_entries")
+}
+
+// -------------------------------------------------------------
+// 5. BILLS & MULTI-HEAD ALLOCATIONS
+// -------------------------------------------------------------
+
+enum BillStatus {
+  RECORDED
+  VERIFIED
+  UNPAID
+  PARTIALLY_PAID
+  FULLY_PAID
+  CANCELLED
+}
+
+model Bill {
+  id               Int        @id @default(autoincrement())
+  internalBillNo   String     @unique @db.VarChar(50) // Auto-generated HYDRAA-BILL-YYYY-XXXX
+  financialYearId  Int
+  wingId           Int
+  vendorId         Int
+  billSubject      String     @db.VarChar(255)
+  billDescription  String?    @db.Text
+  invoiceNo        String     @db.VarChar(100)
+  invoiceDate      DateTime   @db.Date
+  billReceivedDate DateTime?  @db.Date
+  billPassedDate   DateTime?  @db.Date
+  grossAmount      Decimal    @db.Decimal(18, 2)
+  
+  // Tax / Deduction breakdown
+  igstAmount       Decimal    @default(0.00) @db.Decimal(18, 2)
+  cgstAmount       Decimal    @default(0.00) @db.Decimal(18, 2)
+  sgstAmount       Decimal    @default(0.00) @db.Decimal(18, 2)
+  totalGst         Decimal    @default(0.00) @db.Decimal(18, 2)
+  gstCpin          String?    @db.VarChar(50)
+  gstChallanDate   DateTime?  @db.Date
+  
+  tdsAmount        Decimal    @default(0.00) @db.Decimal(18, 2)
+  tdsCrn           String?    @db.VarChar(50)
+  tdsChallanDate   DateTime?  @db.Date
+
+  otherDeductions  Decimal    @default(0.00) @db.Decimal(18, 2)
+  totalDeductions  Decimal    @default(0.00) @db.Decimal(18, 2)
+  netPayableAmount Decimal    @db.Decimal(18, 2) // Gross - Deductions
+
+  // Payment Tracking
+  paidAmount       Decimal    @default(0.00) @db.Decimal(18, 2)
+  balanceDue       Decimal    @db.Decimal(18, 2) // Gross - paidAmount
+  status           BillStatus @default(UNPAID)
+  isVerified       Boolean    @default(false)
+  verifiedBy       String?    @db.VarChar(100)
+  verifiedAt       DateTime?
+  remarks          String?    @db.Text
+  createdBy        String?    @db.VarChar(100)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  financialYear    FinancialYear          @relation(fields: [financialYearId], references: [id])
+  wing             Wing                   @relation(fields: [wingId], references: [id])
+  vendor           Vendor                 @relation(fields: [vendorId], references: [id])
+  allocations      BillBudgetAllocation[]
+  settlements      BillSettlement[]
+  documents        Document[]
+
+  @@unique([vendorId, invoiceNo, financialYearId], name: "unique_vendor_invoice_fy")
+  @@index([status])
+  @@index([invoiceNo])
+  @@index([internalBillNo])
+  @@index([createdAt])
+  @@map("bills")
+}
+
+model BillBudgetAllocation {
+  id              Int      @id @default(autoincrement())
+  billId          Int
+  fundingSourceId Int
+  budgetHeadId    Int
+  allocatedAmount Decimal  @db.Decimal(18, 2)
+  settledAmount   Decimal  @default(0.00) @db.Decimal(18, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bill            Bill          @relation(fields: [billId], references: [id], onDelete: Cascade)
+  fundingSource   FundingSource @relation(fields: [fundingSourceId], references: [id])
+  budgetHead      BudgetHead    @relation(fields: [budgetHeadId], references: [id])
+  settlementAllocs BillSettlementAllocation[]
+
+  @@index([billId])
+  @@map("bill_budget_allocations")
+}
+
+// -------------------------------------------------------------
+// 6. TREASURY PAYMENTS & SETTLEMENTS
+// -------------------------------------------------------------
+
+model BillSettlement {
+  id                   Int      @id @default(autoincrement())
+  settlementReference  String   @unique @db.VarChar(50) // HYDRAA-SETTL-YYYY-XXXX
+  billId               Int
+  userId               Int?
+  grossSettledAmount   Decimal  @db.Decimal(18, 2)
+  netPaidToVendor      Decimal  @db.Decimal(18, 2)
+  deductionsSettled    Decimal  @default(0.00) @db.Decimal(18, 2)
+  
+  // Treasury Reference Attributes
+  tokenNumber          String?  @db.VarChar(50)
+  tokenDate            DateTime? @db.Date
+  chequeNumber         String?  @db.VarChar(50)
+  chequeDate           DateTime? @db.Date
+  utrNumber            String?  @db.VarChar(50)
+  utrDate              DateTime? @db.Date
+  paymentDate          DateTime @db.Date
+  treasuryRemarks      String?  @db.Text
+  isReversed           Boolean  @default(false)
+  reversalReason       String?  @db.Text
+  createdAt            DateTime @default(now())
+
+  bill                 Bill                        @relation(fields: [billId], references: [id])
+  user                 User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  settlementAllocations BillSettlementAllocation[]
+  ledgerEntries        BudgetLedgerEntry[]
+  documents            Document[]
+
+  @@index([billId])
+  @@index([utrNumber])
+  @@index([tokenNumber])
+  @@index([paymentDate])
+  @@map("bill_settlements")
+}
+
+model BillSettlementAllocation {
+  id                     Int      @id @default(autoincrement())
+  billSettlementId       Int
+  billBudgetAllocationId Int
+  amount                 Decimal  @db.Decimal(18, 2)
+  createdAt              DateTime @default(now())
+
+  billSettlement         BillSettlement       @relation(fields: [billSettlementId], references: [id], onDelete: Cascade)
+  billBudgetAllocation   BillBudgetAllocation @relation(fields: [billBudgetAllocationId], references: [id])
+
+  @@index([billSettlementId])
+  @@map("bill_settlement_allocations")
+}
+
+model TaxRemittance {
+  id              Int      @id @default(autoincrement())
+  taxType         String   @db.VarChar(20) // "GST_TDS", "IT_TDS"
+  financialYearId Int
+  periodMonth     Int      // 1-12
+  periodYear      Int      // 2024, 2025, 2026
+  challanNumber   String   @db.VarChar(100) // CPIN or CRIN or BSR Challan
+  challanDate     DateTime @db.Date
+  totalAmount     Decimal  @db.Decimal(18, 2)
+  status          String   @db.VarChar(30) // "PAID", "FILED", "PENDING"
+  bankReference   String?  @db.VarChar(100)
+  remarks         String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id])
+  documents       Document[]
+
+  @@index([challanNumber])
+  @@map("tax_remittances")
+}
+
+// -------------------------------------------------------------
+// 7. SECURE LOCAL DOCUMENT MANAGEMENT
+// -------------------------------------------------------------
+
+model Document {
+  id                Int      @id @default(autoincrement())
+  documentUid       String   @unique @db.VarChar(64) // UUID for safe referencing
+  category          String   @db.VarChar(50)         // "INVOICE", "GO_BRO", "SANCTION", "TAX_CHALLAN", "UTR_PROOF"
+  originalFilename  String   @db.VarChar(255)
+  storedPath        String   @db.VarChar(500)        // Physical disk location
+  mimeType          String   @db.VarChar(100)
+  fileSizeBytes     BigInt
+  checksumSha256    String   @db.VarChar(64)
+  uploadedById      Int?
+  
+  // Relations to financial records
+  billId            Int?
+  governmentOrderId Int?
+  billSettlementId  Int?
+  vendorId          Int?
+  taxRemittanceId   Int?
+  
+  createdAt         DateTime @default(now())
+
+  uploadedBy        User?            @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  bill              Bill?            @relation(fields: [billId], references: [id], onDelete: SetNull)
+  governmentOrder   GovernmentOrder? @relation(fields: [governmentOrderId], references: [id], onDelete: SetNull)
+  billSettlement    BillSettlement?  @relation(fields: [billSettlementId], references: [id], onDelete: SetNull)
+  vendor            Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  taxRemittance     TaxRemittance?   @relation(fields: [taxRemittanceId], references: [id], onDelete: SetNull)
+
+  @@index([documentUid])
+  @@index([category])
+  @@map("documents")
+}
+

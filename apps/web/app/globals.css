@@ -1,0 +1,317 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* System Font Stack prioritizing Segoe UI on Windows */
+  --font-family-system: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  /* Typography Scale Variables */
+  --font-size-root: 16px;
+  --font-size-body: 14px;
+  --font-size-h1: 24px;
+  --font-size-h2: 20px;
+  --font-size-h3: 18px;
+  --font-size-h4: 16px;
+  --font-size-h5: 14px;
+  --font-size-h6: 13px;
+  --font-size-table-header: 13px;
+  --font-size-table-cell: 13.5px;
+  --font-size-form-label: 13.5px;
+  --font-size-input: 14px;
+  --font-size-button: 14px;
+  --font-size-sidebar: 14px;
+  --font-size-badge: 12px;
+  --font-size-helper: 12px;
+  --font-size-error: 13px;
+
+  /* Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Theme Colors */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+}
+
+/* 1. Base Document & Root Styling */
+html {
+  font-size: 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* 2. Headings Scale */
+h1, .page-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: #0f172a;
+}
+
+h2, .section-heading {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #1e293b;
+}
+
+h3, .subsection-heading {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1e293b;
+}
+
+h4, .card-heading {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #334155;
+}
+
+h5, .small-heading {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #334155;
+}
+
+h6, .minor-heading {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #475569;
+}
+
+/* 3. Form Controls & Inputs Scale */
+label, .form-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #334155;
+}
+
+input,
+select,
+textarea,
+.form-input {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #0f172a;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-size: 13.5px;
+  color: #94a3b8;
+}
+
+/* 4. Buttons Scale */
+button,
+.btn-primary,
+.btn-secondary {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 5. Tables & Data Display Scale */
+table {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 13.5px;
+  border-collapse: collapse;
+}
+
+th, .table-header {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.015em;
+  color: #475569;
+}
+
+td, .table-cell {
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #1e293b;
+}
+
+/* 6. Sidebar, Navigation & Menus */
+.sidebar-menu-text {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.breadcrumbs {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* 7. Badges, Helpers & Error Messages */
+.badge,
+.status-label,
+.pill-label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.helper-text {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.error-message {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #ef4444;
+}
+
+/* 8. Financial Data Readability (Tabular Numbers) */
+.tabular-nums,
+.font-tabular,
+.font-mono,
+.amount,
+.currency,
+.stat-value,
+td.font-bold,
+td.font-mono,
+td:has(span[data-type="amount"]) {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
+
+/* Financial values alignment */
+.amount-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 500;
+}
+
+.amount-total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* 9. Card Container Robustness & Dynamic Content Autosizing */
+.card,
+[class*="rounded-xl"],
+[class*="rounded-2xl"],
+[class*="rounded-lg"] {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Dynamic auto-sizing and overflow prevention */
+.card-fluid {
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.tabular-fluid {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 10. High-Visibility Highlighted Action Buttons & Icons */
+.btn-action-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background-color: #eff6ff; /* blue-50 */
+  color: #1d4ed8; /* blue-700 */
+  border: 1px solid #bfdbfe; /* blue-200 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+.btn-action-edit:hover {
+  background-color: #dbeafe; /* blue-100 */
+  color: #1e40af; /* blue-800 */
+  border-color: #93c5fd; /* blue-300 */
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(29, 78, 216, 0.2);
+}
+
+.btn-action-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background-color: #fff1f2; /* rose-50 */
+  color: #e11d48; /* rose-600 */
+  border: 1px solid #fecdd3; /* rose-200 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+.btn-action-delete:hover {
+  background-color: #ffe4e6; /* rose-100 */
+  color: #be123c; /* rose-700 */
+  border-color: #fda4af; /* rose-300 */
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(225, 29, 72, 0.2);
+}
+
+.btn-action-verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  background-color: #ecfdf5; /* emerald-50 */
+  color: #047857; /* emerald-700 */
+  border: 1px solid #a7f3d0; /* emerald-200 */
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+.btn-action-verify:hover {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(4, 120, 87, 0.2);
+}
+
+
